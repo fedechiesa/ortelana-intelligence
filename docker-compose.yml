@@ -1,0 +1,121 @@
+name: ortelana-intelligence
+services:
+  postgres:
+    image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+    environment:
+      POSTGRES_USER: ortelana
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-demo-db-local}
+      POSTGRES_DB: ortelana
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:-demo-grafana-reader-local}
+    ports: ["127.0.0.1:5433:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./infrastructure/postgres/init.sh:/docker-entrypoint-initdb.d/10-project.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ortelana -d ortelana"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+    networks: [internal]
+  backend:
+    build: {context: ., dockerfile: backend/Dockerfile, target: runtime}
+    environment:
+      DATABASE_URL: postgresql+psycopg://ortelana:${POSTGRES_PASSWORD:-demo-db-local}@postgres:5432/ortelana
+      DATA_DIR: /data
+      DATA_MODE: ${DATA_MODE:-demo}
+      OPERATOR_TOKEN: ${OPERATOR_TOKEN:-demo-operator-local}
+      SUPERVISOR_TOKEN: ${SUPERVISOR_TOKEN:-demo-supervisor-local}
+      AUTOMATION_TOKEN: ${AUTOMATION_TOKEN:-demo-automation-local}
+    volumes: ["./data:/data:ro"]
+    ports: ["127.0.0.1:8001:8000"]
+    depends_on: {postgres: {condition: service_healthy}}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/ready', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 30s
+    restart: unless-stopped
+    networks: [internal]
+  frontend:
+    build: {context: ., dockerfile: frontend/Dockerfile}
+    ports: ["127.0.0.1:5173:80"]
+    depends_on: {backend: {condition: service_healthy}}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks: [internal]
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:stable@sha256:c349b24d6e242b4ea14d75e6f1a90c50e348cf4b1c4512b4a0a50219ead6533d
+    ports: ["127.0.0.1:5678:5678"]
+    environment:
+      GENERIC_TIMEZONE: America/Argentina/Buenos_Aires
+      TZ: America/Argentina/Buenos_Aires
+      N8N_ENCRYPTION_KEY: ${N8N_ENCRYPTION_KEY:-demo-n8n-encryption-key-local-only}
+      N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS: "true"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_SECURE_COOKIE: "false"
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "true"
+      ORTELANA_AUTOMATION_TOKEN: ${AUTOMATION_TOKEN:-demo-automation-local}
+    volumes:
+      - n8ndata:/home/node/.n8n
+      - ./workflows:/workflows:ro
+      - ./infrastructure/n8n/start.sh:/bootstrap/start.sh:ro
+    depends_on: {backend: {condition: service_healthy}}
+    entrypoint: ["/bin/sh", "/bootstrap/start.sh"]
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:5678/healthz').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 20
+      start_period: 60s
+    restart: unless-stopped
+    networks: [internal]
+  prometheus:
+    image: prom/prometheus:latest@sha256:e04987641b57704f408e31f6373ba4138ecf27cb4a165d24aabb6c38fddd0f06
+    ports: ["127.0.0.1:9090:9090"]
+    command: ["--config.file=/etc/prometheus/prometheus.yml", "--storage.tsdb.retention.time=15d"]
+    volumes:
+      - ./infrastructure/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheusdata:/prometheus
+    depends_on: {backend: {condition: service_healthy}}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/ready"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks: [internal]
+  grafana:
+    image: grafana/grafana:latest@sha256:81556409ba48b2b922e0adb69a2511337d8ba7578f11962eefa6149a2d815101
+    ports: ["127.0.0.1:3000:3000"]
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-demo-grafana-local}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GRAFANA_DB_PASSWORD: ${GRAFANA_DB_PASSWORD:-demo-grafana-reader-local}
+    volumes:
+      - grafanadata:/var/lib/grafana
+      - ./infrastructure/grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on: {backend: {condition: service_healthy}, prometheus: {condition: service_healthy}}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 15s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+    networks: [internal]
+volumes:
+  pgdata:
+  n8ndata:
+  grafanadata:
+  prometheusdata:
+networks:
+  internal:
+    driver: bridge

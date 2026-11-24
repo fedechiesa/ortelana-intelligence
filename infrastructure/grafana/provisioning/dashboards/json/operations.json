@@ -1,0 +1,579 @@
+{
+  "uid": "ortelana-operations",
+  "title": "Ortelana | Operational Monitoring",
+  "tags": [
+    "ortelana",
+    "live-sources"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 40,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "API scrape availability",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ortelana-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{job=\"ortelana-api\"}",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Persisted execution states",
+      "type": "barchart",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ortelana-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT technical_status AS state, COUNT(*) AS executions FROM executions GROUP BY 1",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "sql": {
+            "columns": [],
+            "groupBy": [],
+            "limit": 1000
+          }
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "HTTP request rate",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ortelana-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(ortelana_http_requests_total[5m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "HTTP error rate",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ortelana-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(ortelana_http_requests_total{status=~\"5..\"}[5m]))",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Mean execution latency (seconds)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ortelana-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(ortelana_execution_seconds_sum[5m]) / rate(ortelana_execution_seconds_count[5m])",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Execution latency p95 (seconds)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ortelana-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by(le) (rate(ortelana_execution_seconds_bucket[5m])))",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Pending human reviews",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ortelana-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ortelana_pending_reviews",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Critical analyses (persisted)",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ortelana-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ortelana_critical_executions",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 9,
+      "title": "Node latency p95 (seconds)",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ortelana-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by(le,node) (rate(ortelana_node_seconds_bucket[5m])))",
+          "legendFormat": "{{node}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 10,
+      "title": "Execution outcomes since process start",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ortelana-prom"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "ortelana_executions_finished_total",
+          "legendFormat": "{{outcome}}"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 11,
+      "title": "Human decisions",
+      "type": "barchart",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ortelana-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT decision, COUNT(*) AS decisions FROM decisions GROUP BY 1",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "sql": {
+            "columns": [],
+            "groupBy": [],
+            "limit": 1000
+          }
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 12,
+      "title": "Successful processing / waiting review (%)",
+      "type": "stat",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ortelana-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT 100.0 * COUNT(*) FILTER(WHERE technical_status IN ('COMPLETED','WAITING_REVIEW')) / NULLIF(COUNT(*),0) AS success_percent FROM executions",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "sql": {
+            "columns": [],
+            "groupBy": [],
+            "limit": 1000
+          }
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    }
+  ]
+}

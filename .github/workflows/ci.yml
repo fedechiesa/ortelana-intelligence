@@ -1,0 +1,45 @@
+name: Continuous integration
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
+        env:
+          POSTGRES_USER: ortelana
+          POSTGRES_PASSWORD: demo-db-local
+          POSTGRES_DB: ortelana_test
+        ports: ['5432:5432']
+        options: --health-cmd "pg_isready -U ortelana -d ortelana_test" --health-interval 5s --health-retries 15
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://ortelana:demo-db-local@127.0.0.1:5432/ortelana_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install uv==0.13.8
+      - run: uv sync --project backend --frozen
+      - run: uv run --project backend --frozen ruff check --config backend/pyproject.toml backend scripts
+      - run: uv run --project backend --frozen ruff format --config backend/pyproject.toml --check backend scripts
+      - run: uv run --project backend --frozen mypy --config-file backend/pyproject.toml backend/app
+      - run: uv run --project backend --frozen pytest backend/tests -q
+      - run: uv run --project backend --frozen python scripts/check_public_tree.py
+      - run: docker compose config --quiet
+  frontend:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run: {working-directory: frontend}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '22', cache: npm, cache-dependency-path: frontend/package-lock.json}
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build

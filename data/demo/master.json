@@ -1,0 +1,50 @@
+[
+  {
+    "id": "DEMO-001",
+    "nombre": "Demo Canvas Natural",
+    "linea_textil": "Utility",
+    "metadatos": {
+      "synthetic": true
+    }
+  },
+  {
+    "id": "DEMO-002",
+    "nombre": "Demo Twill Blue",
+    "linea_textil": "Apparel",
+    "metadatos": {
+      "synthetic": true
+    }
+  },
+  {
+    "id": "DEMO-003",
+    "nombre": "Demo Velvet Forest",
+    "linea_textil": "Upholstery",
+    "metadatos": {
+      "synthetic": true
+    }
+  },
+  {
+    "id": "DEMO-004",
+    "nombre": "Demo Linen Sand",
+    "linea_textil": "Home",
+    "metadatos": {
+      "synthetic": true
+    }
+  },
+  {
+    "id": "DEMO-005",
+    "nombre": "Demo Jersey Cloud",
+    "linea_textil": "Apparel",
+    "metadatos": {
+      "synthetic": true
+    }
+  },
+  {
+    "id": "DEMO-006",
+    "nombre": "Demo Jacquard Stone",
+    "linea_textil": "Home",
+    "metadatos": {
+      "synthetic": true
+    }
+  }
+]

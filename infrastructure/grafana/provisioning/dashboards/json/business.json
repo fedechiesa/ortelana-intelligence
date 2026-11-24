@@ -1,0 +1,434 @@
+{
+  "uid": "ortelana-business",
+  "title": "Ortelana | Business Intelligence",
+  "tags": [
+    "ortelana",
+    "live-sources"
+  ],
+  "timezone": "browser",
+  "schemaVersion": 40,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Observed reporting-year metres (latest imported snapshot)",
+      "type": "barchart",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ortelana-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT year::text AS reporting_year, SUM(total) AS metres FROM sales WHERE dataset_id=(SELECT id FROM datasets ORDER BY created_at DESC LIMIT 1) GROUP BY year ORDER BY year",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "sql": {
+            "columns": [],
+            "groupBy": [],
+            "limit": 1000
+          }
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 2,
+      "title": "Observed branch volume, latest reporting year",
+      "type": "barchart",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ortelana-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT b.name, SUM(s.total) AS metres FROM sales s JOIN branches b ON b.id=s.branch_id AND b.dataset_id=s.dataset_id WHERE s.dataset_id=(SELECT id FROM datasets ORDER BY created_at DESC LIMIT 1) AND s.year=(SELECT MAX(year) FROM sales WHERE dataset_id=(SELECT id FROM datasets ORDER BY created_at DESC LIMIT 1)) GROUP BY b.name ORDER BY 2 DESC",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "sql": {
+            "columns": [],
+            "groupBy": [],
+            "limit": 1000
+          }
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 3,
+      "title": "Commercial risk distribution",
+      "type": "barchart",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ortelana-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT business_status AS risk, COUNT(*) AS analyses FROM executions WHERE business_status IS NOT NULL GROUP BY 1",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "sql": {
+            "columns": [],
+            "groupBy": [],
+            "limit": 1000
+          }
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 4,
+      "title": "Matched commercial changes and data mode",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ortelana-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT e.created_at, d.mode, e.id, e.result->>'producto' AS product, (e.result->>'variacion')::numeric AS matched_change_percent, e.business_status, e.approval_status FROM executions e JOIN datasets d ON d.id=e.dataset_id ORDER BY e.created_at DESC LIMIT 100",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "sql": {
+            "columns": [],
+            "groupBy": [],
+            "limit": 1000
+          }
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 5,
+      "title": "Products with evidence-backed declines",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ortelana-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT e.id AS execution, item->>'name' AS product, (item->>'variation')::numeric AS matched_change_percent, item->>'status' AS risk, item->>'coverage_pct' AS coverage_percent FROM executions e CROSS JOIN LATERAL json_array_elements(e.result->'products') item WHERE item->>'status' IN ('ADVERTENCIA','CRITICO') ORDER BY e.created_at DESC LIMIT 100",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "sql": {
+            "columns": [],
+            "groupBy": [],
+            "limit": 1000
+          }
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Immutable human decisions",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ortelana-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT created_at, execution_id, decision, actor, comment, policy->>'version' AS policy_version FROM decisions ORDER BY created_at DESC LIMIT 100",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "sql": {
+            "columns": [],
+            "groupBy": [],
+            "limit": 1000
+          }
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Observed textile line volume, latest reporting year",
+      "type": "barchart",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ortelana-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT p.line, SUM(s.total) AS metres FROM sales s JOIN products p ON p.id=s.product_id AND p.dataset_id=s.dataset_id WHERE s.dataset_id=(SELECT id FROM datasets ORDER BY created_at DESC LIMIT 1) AND s.year=(SELECT MAX(year) FROM sales WHERE dataset_id=(SELECT id FROM datasets ORDER BY created_at DESC LIMIT 1)) GROUP BY p.line ORDER BY 2 DESC",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "sql": {
+            "columns": [],
+            "groupBy": [],
+            "limit": 1000
+          }
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Historical alert & review evidence",
+      "type": "table",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "ortelana-pg"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT created_at, id AS execution, business_status, approval_status, result->>'recomendacion' AS recommendation FROM executions WHERE business_status IN ('CRITICO','ADVERTENCIA') ORDER BY created_at DESC LIMIT 100",
+          "format": "table",
+          "rawQuery": true,
+          "editorMode": "code",
+          "sql": {
+            "columns": [],
+            "groupBy": [],
+            "limit": 1000
+          }
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        },
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+name: Full local stack integration
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  stack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/setup-node@v4
+        with: {node-version: '22'}
+      - run: pip install uv==0.13.8
+      - run: uv sync --project backend --frozen
+      - run: docker compose up --build -d --wait --wait-timeout 180
+      - run: uv run --project backend --frozen python scripts/validate_stack.py --restart-backend
+      - run: uv run --project backend --frozen python scripts/validate_n8n.py
+      - run: npm ci && npx playwright install --with-deps chromium && npm run test:e2e
+        working-directory: frontend
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: actual-stack-evidence
+          path: |
+            .local/validation/stack.json
+            .local/validation/n8n.json
+            frontend/playwright-report
+            docs/screenshots
+      - if: always()
+        run: docker compose down

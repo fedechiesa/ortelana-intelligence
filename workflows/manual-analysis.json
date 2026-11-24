@@ -1,0 +1,629 @@
+{
+  "id": "ortelanaManual01",
+  "name": "Ortelana | manual reporting-year analysis",
+  "active": false,
+  "nodes": [
+    {
+      "id": "7d77e38d-7d4e-5d2a-8a09-2c7cc6532089",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {}
+    },
+    {
+      "id": "cc234580-462a-5943-9863-52cf3515d984",
+      "name": "Prepare request",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        240,
+        0
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "anio_base",
+              "name": "anio_base",
+              "value": 2024,
+              "type": "number"
+            },
+            {
+              "id": "anio_actual",
+              "name": "anio_actual",
+              "value": 2025,
+              "type": "number"
+            },
+            {
+              "id": "producto_id",
+              "name": "producto_id",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "idempotency_key",
+              "name": "idempotency_key",
+              "value": "={{ 'n8n-' + $workflow.id + '-' + $execution.id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "e3d7187a-f723-5c20-a555-1162b95cb959",
+      "name": "Analyze via API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        480,
+        0
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/analizar",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $('Prepare request').first().json.idempotency_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({anio_base: $('Prepare request').first().json.anio_base, anio_actual: $('Prepare request').first().json.anio_actual, producto_id: $('Prepare request').first().json.producto_id || null}) }}",
+        "options": {
+          "timeout": 45000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ortelanaApiHeader",
+          "name": "Ortelana API automation"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "6840c1fe-6b4f-5081-82a3-616a1f73aa32",
+      "name": "Transient failure?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        0
+      ],
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "transient",
+              "leftValue": "={{ [0,502,503,504].includes($json.statusCode || 0) }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "d82ce985-3578-5e5d-a987-1bc35ee1dc4d",
+      "name": "Bounded backoff",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        960,
+        -160
+      ],
+      "parameters": {
+        "amount": 2,
+        "unit": "seconds"
+      },
+      "webhookId": "0e43e261-eb98-5d0b-9321-3a1cd6a3830b"
+    },
+    {
+      "id": "65cd92af-99e2-59f7-9b0e-3db8a6013edb",
+      "name": "Retry once safely",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1200,
+        -160
+      ],
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/analizar",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Idempotency-Key",
+              "value": "={{ $('Prepare request').first().json.idempotency_key }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({anio_base: $('Prepare request').first().json.anio_base, anio_actual: $('Prepare request').first().json.anio_actual, producto_id: $('Prepare request').first().json.producto_id || null}) }}",
+        "options": {
+          "timeout": 45000,
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "neverError": true
+            }
+          }
+        }
+      },
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "ortelanaApiHeader",
+          "name": "Ortelana API automation"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "id": "323a7e1e-5691-5c92-a720-e373756d5658",
+      "name": "Route persisted risk",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1440,
+        0
+      ],
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "NORMAL",
+                    "leftValue": "={{ $json.body?.estado || 'ERROR' }}",
+                    "rightValue": "NORMAL",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "NORMAL"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "ADVERTENCIA",
+                    "leftValue": "={{ $json.body?.estado || 'ERROR' }}",
+                    "rightValue": "ADVERTENCIA",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "ADVERTENCIA"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "CRITICO",
+                    "leftValue": "={{ $json.body?.estado || 'ERROR' }}",
+                    "rightValue": "CRITICO",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "CRITICO"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "typeValidation": "strict"
+                },
+                "conditions": [
+                  {
+                    "id": "SIN_BASE",
+                    "leftValue": "={{ $json.body?.estado || 'ERROR' }}",
+                    "rightValue": "SIN_BASE",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "SIN_BASE"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      }
+    },
+    {
+      "id": "79ff459a-a868-5aa9-826b-cc5870abd980",
+      "name": "Normal recorded",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1700,
+        -180
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "result",
+              "name": "outcome",
+              "value": "NORMAL: monitoring only",
+              "type": "string"
+            },
+            {
+              "id": "execution",
+              "name": "execution_id",
+              "value": "={{ $json.body?.ejecucion_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "trace",
+              "name": "trace_id",
+              "value": "={{ $json.headers?.['x-correlation-id'] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "review",
+              "name": "review_url",
+              "value": "http://localhost:5173/#reviews",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "68bc2a2e-9d43-5e7f-ad11-fe731f4ff5b9",
+      "name": "Warning recorded",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1700,
+        -35
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "result",
+              "name": "outcome",
+              "value": "ADVERTENCIA: review commercial trend",
+              "type": "string"
+            },
+            {
+              "id": "execution",
+              "name": "execution_id",
+              "value": "={{ $json.body?.ejecucion_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "trace",
+              "name": "trace_id",
+              "value": "={{ $json.headers?.['x-correlation-id'] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "review",
+              "name": "review_url",
+              "value": "http://localhost:5173/#reviews",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "fc8400a4-ecb0-5aeb-a9c2-96f8abbcf8ba",
+      "name": "Human review required",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1700,
+        110
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "result",
+              "name": "outcome",
+              "value": "CRITICO: backend checkpoint paused; decide in authenticated UI",
+              "type": "string"
+            },
+            {
+              "id": "execution",
+              "name": "execution_id",
+              "value": "={{ $json.body?.ejecucion_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "trace",
+              "name": "trace_id",
+              "value": "={{ $json.headers?.['x-correlation-id'] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "review",
+              "name": "review_url",
+              "value": "http://localhost:5173/#reviews",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "646596a7-763c-583d-95b9-ad8e057dc8a9",
+      "name": "No comparable baseline",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1700,
+        255
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "result",
+              "name": "outcome",
+              "value": "SIN_BASE: collect comparable evidence",
+              "type": "string"
+            },
+            {
+              "id": "execution",
+              "name": "execution_id",
+              "value": "={{ $json.body?.ejecucion_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "trace",
+              "name": "trace_id",
+              "value": "={{ $json.headers?.['x-correlation-id'] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "review",
+              "name": "review_url",
+              "value": "http://localhost:5173/#reviews",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    },
+    {
+      "id": "26077070-9cfb-5e1e-b8fd-ef896a1f8f12",
+      "name": "Technical error recorded",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1700,
+        400
+      ],
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "result",
+              "name": "outcome",
+              "value": "ERROR: inspect API trace; no commercial authorization",
+              "type": "string"
+            },
+            {
+              "id": "execution",
+              "name": "execution_id",
+              "value": "={{ $json.body?.ejecucion_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "trace",
+              "name": "trace_id",
+              "value": "={{ $json.headers?.['x-correlation-id'] || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "review",
+              "name": "review_url",
+              "value": "http://localhost:5173/#reviews",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      }
+    }
+  ],
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Prepare request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare request": {
+      "main": [
+        [
+          {
+            "node": "Analyze via API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze via API": {
+      "main": [
+        [
+          {
+            "node": "Transient failure?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transient failure?": {
+      "main": [
+        [
+          {
+            "node": "Bounded backoff",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Route persisted risk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Bounded backoff": {
+      "main": [
+        [
+          {
+            "node": "Retry once safely",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Retry once safely": {
+      "main": [
+        [
+          {
+            "node": "Route persisted risk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route persisted risk": {
+      "main": [
+        [
+          {
+            "node": "Normal recorded",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Warning recorded",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Human review required",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No comparable baseline",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Technical error recorded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataSuccessExecution": "all",
+    "saveDataErrorExecution": "all",
+    "executionTimeout": 120,
+    "timezone": "America/Argentina/Buenos_Aires"
+  },
+  "versionId": "16332e4a-aa1f-59af-9858-b62edf2d8059",
+  "tags": []
+}

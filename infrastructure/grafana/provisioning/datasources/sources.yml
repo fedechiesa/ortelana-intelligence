@@ -1,0 +1,21 @@
+apiVersion: 1
+datasources:
+  - name: Ortelana PostgreSQL
+    uid: ortelana-pg
+    type: grafana-postgresql-datasource
+    access: proxy
+    url: postgres:5432
+    user: grafana_reader
+    secureJsonData:
+      password: $GRAFANA_DB_PASSWORD
+    jsonData:
+      database: ortelana
+      sslmode: disable
+      postgresVersion: 1600
+      timescaledb: false
+  - name: Ortelana Prometheus
+    uid: ortelana-prom
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
