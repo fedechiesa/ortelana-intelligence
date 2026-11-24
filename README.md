@@ -4,6 +4,8 @@
 
 A portfolio application that turns textile sales reports into reproducible comparisons, traceable recommendations and accountable decisions. A React workspace, Python API and deterministic LangGraph workflow run together in a six-service local stack.
 
+[![Continuous integration](https://github.com/fedechiesa/ortelana-intelligence/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/fedechiesa/ortelana-intelligence/actions/workflows/ci.yml)
+[![Full stack](https://github.com/fedechiesa/ortelana-intelligence/actions/workflows/stack.yml/badge.svg?branch=main)](https://github.com/fedechiesa/ortelana-intelligence/actions/workflows/stack.yml)
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)
