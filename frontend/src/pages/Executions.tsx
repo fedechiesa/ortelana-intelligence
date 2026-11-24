@@ -109,7 +109,11 @@ export function Executions({ onDetail }: { onDetail: (id: string) => void }) {
                       </small>
                     </td>
                     <td>
-                      <Badge status={e.estado} />
+                      {e.business_status ? (
+                        <Badge status={e.business_status} />
+                      ) : (
+                        <span className="muted">—</span>
+                      )}
                     </td>
                     <td>
                       <Badge status={e.technical_status} />

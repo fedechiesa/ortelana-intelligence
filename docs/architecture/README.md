@@ -34,6 +34,8 @@ Business rows and LangGraph checkpoints use separate transactions. The design th
 
 Unique database constraints protect execution idempotency and one decision per review. Row locks and compare-and-set approval updates handle concurrent decisions. PostgreSQL triggers protect final decisions, evidence, inputs, policy snapshots, review history and audit. A deferred constraint prevents an approved/rejected state without the matching persisted decision in the same transaction.
 
+A decision can arrive just after evidence is committed and before the original graph finishes writing its interrupt checkpoint. Decision continuation waits for the execution advisory lock with a five-second bound, then rechecks completion. Final-state writes use a row lock and cannot overwrite a committed RESUMING state with WAITING_REVIEW. A dedicated PostgreSQL race test verifies one finalization and no lost approval. If the lock remains busy beyond the bound, the decision remains committed and a sanitized 503 directs the supervisor to inspect/recover it.
+
 SQLite is a documented single-process testing/diagnostic fallback with persistent SQLite checkpoints and local locking. It does not claim to provide the PostgreSQL distributed advisory-lock or trigger guarantees.
 
 ## Scope boundaries

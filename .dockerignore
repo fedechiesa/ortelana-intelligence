@@ -8,3 +8,11 @@ frontend/dist
 **/.pytest_cache
 .env
 data/private
+**/.venv
+**/.mypy_cache
+**/.ruff_cache
+**/pytest-cache-files-*
+**/*.tsbuildinfo
+**/test-results
+**/playwright-report
+**/*.log

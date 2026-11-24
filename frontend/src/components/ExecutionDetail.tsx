@@ -14,6 +14,12 @@ export function ExecutionDetail({
   const q = useQuery({
     queryKey: ["execution", id],
     queryFn: () => api<Execution>(`/executions/${id}`),
+    refetchInterval: (query) =>
+      ["RUNNING", "RESUMING", "WAITING_REVIEW"].includes(
+        query.state.data?.technical_status || "",
+      )
+        ? 2000
+        : false,
   });
   const audit = useQuery({
     queryKey: ["audit", id],
@@ -40,7 +46,7 @@ export function ExecutionDetail({
                 </p>
               </div>
               <div className="badge-stack">
-                <Badge status={e.estado} />
+                <Badge status={e.business_status || e.estado} />
                 <Badge status={e.approval_status} />
               </div>
             </div>

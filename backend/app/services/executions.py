@@ -98,12 +98,25 @@ class ExecutionService:
         return execution, True
 
     @contextmanager
-    def lock(self, execution_id):
+    def lock(self, execution_id, wait=False):
         if self.engine.dialect.name == "postgresql":
             with self.engine.connect() as connection:
                 locked = connection.scalar(
                     text("SELECT pg_try_advisory_lock(hashtextextended(:id, 0))"), {"id": execution_id}
                 )
+                if not locked and wait:
+                    try:
+                        connection.execute(text("SET LOCAL lock_timeout = '5s'"))
+                        connection.execute(
+                            text("SELECT pg_advisory_lock(hashtextextended(:id, 0))"), {"id": execution_id}
+                        )
+                        locked = True
+                    except OperationalError as exc:
+                        if getattr(exc.orig, "sqlstate", None) == "55P03":
+                            raise DomainError(
+                                503, "Decision recorded; execution is busy. Inspect or recover it."
+                            ) from None
+                        raise
                 connection.commit()
                 if not locked:
                     raise DomainError(409, "Execution is already being processed; retry safely")
@@ -143,9 +156,11 @@ class ExecutionService:
             d = session.get(Decision, execution_id)
             return d.decision if d else None
 
-    def run(self, execution_id):
-        with self.lock(execution_id):
+    def run(self, execution_id, *, wait_for_lock=False):
+        with self.lock(execution_id, wait=wait_for_lock):
             e = self.get(execution_id)
+            if e.technical_status == "COMPLETED":
+                return e
             config = dict(configurable=dict(thread_id=e.thread_id), recursion_limit=16, max_concurrency=3)
             started = perf_counter()
             try:
@@ -168,9 +183,15 @@ class ExecutionService:
                     snapshot = self.graph.get_state(config)
                 waiting = bool(snapshot.next)
                 with self.factory.begin() as session:
-                    stored = session.get(Execution, e.id)
+                    stored = session.scalar(select(Execution).where(Execution.id == e.id).with_for_update())
                     previous = stored.technical_status
-                    stored.technical_status = "WAITING_REVIEW" if waiting else "COMPLETED"
+                    stored.technical_status = (
+                        "RESUMING"
+                        if waiting and stored.approval_status in ("APPROVED", "REJECTED")
+                        else "WAITING_REVIEW"
+                        if waiting
+                        else "COMPLETED"
+                    )
                     stored.steps = {s["node"]: s for s in snapshot.values.get("steps", [])}
                     stored.duration_ms += max(1, round((perf_counter() - started) * 1000))
                     stored.error = None
@@ -249,7 +270,7 @@ class ExecutionService:
             raise DomainError(409, "Decision already recorded") from None
         DECISIONS.labels(request.decision).inc()
         # Commit must precede graph continuation. Startup recovery closes a crash between these two steps.
-        return self.run(request.ejecucion_id)
+        return self.run(request.ejecucion_id, wait_for_lock=True)
 
     def recover_pending(self):
         with self.factory() as session:

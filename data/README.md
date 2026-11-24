@@ -4,6 +4,8 @@
 
 Original teaching material and the historical dataset have no supplied redistribution license. They are excluded from Git under `contexto/`, `.local/` and `data/private/`. No license is assigned to them here.
 
+`historical` means the originally supplied educational case history. It is not a claim that these are independently verified transactions from an operating company. `demo` identifies this project's separate, independently generated demonstration scenarios.
+
 To use authorized historical files locally, place the unmodified CSV at `data/private/sales.csv` and the full original `maestro.json` at `data/private/master.json`. Set `DATA_MODE=historical` in `.env` and restart. Dataset identity hashes mode, CSV and master; existing results remain linked to their original snapshot.
 
 The supported original CSV profile uses consecutive active columns: M=12, B=6, S=2, C/E=2. Missing active cells, negatives, non-finite numbers, unknown products, duplicate keys and non-zero unused columns fail ingestion. A separate older PDF describes closing-month storage; that profile conflicts with the supplied CSV and is intentionally **not** silently accepted. Seasons cannot be converted to calendar months from these sources.

@@ -1,13 +1,27 @@
 from concurrent.futures import ThreadPoolExecutor
+from threading import Event
+from time import monotonic, sleep
 from uuid import uuid4
 
 import pytest
+from app.graph.workflow import build_graph
 from app.repositories.models import Audit, Decision
 from conftest import OPERATOR, SUPERVISOR
 from sqlalchemy import select, text
 from sqlalchemy.exc import DBAPIError
 
 pytestmark = pytest.mark.postgres
+
+
+def test_application_role_has_no_global_privileges(postgres_client):
+    with postgres_client.app.state.service.engine.connect() as connection:
+        flags = connection.execute(
+            text(
+                "SELECT rolsuper,rolcreatedb,rolcreaterole,rolreplication,rolbypassrls "
+                "FROM pg_roles WHERE rolname=current_user"
+            )
+        ).one()
+        assert not any(flags)
 
 
 def create(client, key=None):
@@ -81,3 +95,58 @@ def test_postgres_rejects_unbacked_approval_and_evidence_tampering(postgres_clie
     stored = c.get(f"/executions/{e['ejecucion_id']}", headers=OPERATOR).json()
     assert stored["approval_status"] == "PENDING"
     assert stored["estado"] == "CRITICO"
+
+
+def test_decision_during_report_checkpoint_is_not_lost(postgres_client):
+    c = postgres_client
+    svc = c.app.state.service
+    original_graph = svc.graph
+    ready, release = Event(), Event()
+    execution_ids = []
+
+    def pause_after_evidence(execution_id, report):
+        svc.persist_report(execution_id, report)
+        execution_ids.append(execution_id)
+        ready.set()
+        assert release.wait(5), "Timed out waiting for concurrent decision fixture"
+
+    svc.graph = build_graph(
+        svc.analytics, pause_after_evidence, svc.read_decision, original_graph.checkpointer
+    )
+    try:
+        with ThreadPoolExecutor(2) as pool:
+            analysis = pool.submit(create, c)
+            assert ready.wait(5)
+            execution_id = execution_ids[0]
+            decision = pool.submit(
+                c.post,
+                "/decision",
+                headers=SUPERVISOR,
+                json={
+                    "ejecucion_id": execution_id,
+                    "decision": "APROBADO",
+                    "comentario": "SYNTHETIC concurrent checkpoint review fixture",
+                },
+            )
+            deadline = monotonic() + 3
+            while not svc.read_decision(execution_id) and monotonic() < deadline:
+                sleep(0.01)
+            assert svc.read_decision(execution_id) == "APROBADO"
+            release.set()
+            assert analysis.result(timeout=5).status_code == 200
+            response = decision.result(timeout=5)
+            assert response.status_code == 200, response.text
+            assert response.json()["technical_status"] == "COMPLETED"
+            assert response.json()["simulated_authorization"] is True
+        with svc.factory() as session:
+            events = list(
+                session.scalars(
+                    select(Audit).where(
+                        Audit.execution_id == execution_id, Audit.event == "execution_completed"
+                    )
+                )
+            )
+            assert len(events) == 1
+    finally:
+        release.set()
+        svc.graph = original_graph

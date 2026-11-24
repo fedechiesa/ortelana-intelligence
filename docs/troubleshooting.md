@@ -18,6 +18,8 @@ The development machine already had a service on 8000; this project publishes AP
 
 Migrations run before API startup. `docker compose exec backend alembic current` should show the latest revision. A failed migration makes startup fail, rather than serving an incompatible schema. Destructive downgrades are disabled. Back up the project volume before changing the schema.
 
+The cluster uses `ortelana_admin`; the API uses restricted `ortelana`. Bootstrap scripts run only on a new volume, so editing password environment values does not rotate passwords in an existing database. Do not delete evidence volumes to change credentials. `scripts/validate_initialization.ps1` verifies a fresh setup in isolated temporary containers, without touching existing volumes.
+
 An interrupted review remains pending after restart. Committed decisions in RESUMING are automatically reconciled. ERROR runs require an authenticated supervisor POST to `/executions/{id}/recover`; fix the underlying problem first. Technical failures do not become commercial critical risks. Duration measures processing, not time spent waiting for a human.
 
 ## n8n

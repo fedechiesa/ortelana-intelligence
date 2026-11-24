@@ -10,10 +10,12 @@ Strict JSON request schemas reject unknown fields, invalid decisions, non-finite
 
 PostgreSQL constraints, locks and triggers enforce one decision per review, immutable final decisions and evidence, append-only audit and policy snapshots, and committed human authority. A normal/warning/no-baseline run cannot receive an approval. Actions are simulations only.
 
-## Pending environment hardening
+## Database role separation
 
-The original project-local PostgreSQL bootstrap user `ortelana` remains a superuser. An attempted separation into `ortelana_admin` (local administrator) and a reduced-privilege application user was **rejected by automatic approval review** because creating the persistent administrator and changing privileges required specific authorization for that resource. The statement was not executed. An explicit authorization request is pending. No workaround or indirect role mutation was used.
+`ortelana_admin` is the cluster administrator. `ortelana` is the application/migration identity: it owns the two project databases and their public application objects, with `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOREPLICATION` and no row-security bypass. `grafana_reader` receives SELECT on the commercial schema and no writes. Administrator credentials are not passed to the backend, frontend or n8n.
 
-Until authorized, keep this stack on localhost with synthetic data. This is a material limitation of the running database role, not a claim of completed least-privilege deployment. Application approval roles and Grafana read-only access remain enforced. No unrelated database/project is modified.
+The original local cluster had been initialized using the application name. PostgreSQL requires its bootstrap identity to remain a superuser. The authorized upgrade therefore preserved that identity as `ortelana_admin`, created a new restricted `ortelana` identity and transferred only project public objects and database ownership. A temporary migration identity was removed after the operation. All existing executions were preserved. No unrelated database/project was modified.
+
+The bootstrap now creates these roles correctly on a new volume. A clean isolated initialization verified migrations, import, PostgreSQL checkpoints, critical interruption and authenticated approval, and the full 46-test suite passed using the restricted application identity. A dedicated test asserts its actual global privilege flags. See [PostgreSQL role changes](https://www.postgresql.org/docs/16/sql-alterrole.html).
 
 Original teaching materials/dataset are excluded pending redistribution review. No project-wide license is assigned to third-party materials. Dependency locks, `.dockerignore`, `.gitignore`, container non-root backend execution and local-only exposure reduce accidental leakage; inspect the staged tree before publication.

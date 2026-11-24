@@ -10,11 +10,11 @@ jobs:
       postgres:
         image: postgres:16-alpine@sha256:721873c34ceb9f8d8fc265984940dc982404c105f19ad51be9fdc5970a6080ea
         env:
-          POSTGRES_USER: ortelana
-          POSTGRES_PASSWORD: demo-db-local
+          POSTGRES_USER: ortelana_admin
+          POSTGRES_PASSWORD: demo-postgres-admin-local
           POSTGRES_DB: ortelana_test
         ports: ['5432:5432']
-        options: --health-cmd "pg_isready -U ortelana -d ortelana_test" --health-interval 5s --health-retries 15
+        options: --health-cmd "pg_isready -U ortelana_admin -d ortelana_test" --health-interval 5s --health-retries 15
     env:
       TEST_DATABASE_URL: postgresql+psycopg://ortelana:demo-db-local@127.0.0.1:5432/ortelana_test
     steps:
@@ -23,6 +23,15 @@ jobs:
         with: {python-version: '3.12'}
       - run: pip install uv==0.13.8
       - run: uv sync --project backend --frozen
+      - name: Create restricted application identity
+        run: |
+          uv run --project backend --frozen python - <<'PY'
+          import psycopg
+          with psycopg.connect('postgresql://ortelana_admin:demo-postgres-admin-local@127.0.0.1:5432/ortelana_test', autocommit=True) as connection:
+              connection.execute("CREATE ROLE ortelana LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION PASSWORD 'demo-db-local'")
+              connection.execute('ALTER DATABASE ortelana_test OWNER TO ortelana')
+              connection.execute('GRANT USAGE,CREATE ON SCHEMA public TO ortelana')
+          PY
       - run: uv run --project backend --frozen ruff check --config backend/pyproject.toml backend scripts
       - run: uv run --project backend --frozen ruff format --config backend/pyproject.toml --check backend scripts
       - run: uv run --project backend --frozen mypy --config-file backend/pyproject.toml backend/app

@@ -23,6 +23,7 @@ jobs:
         if: always()
         with:
           name: actual-stack-evidence
+          include-hidden-files: true
           path: |
             .local/validation/stack.json
             .local/validation/n8n.json
