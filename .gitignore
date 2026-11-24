@@ -18,6 +18,9 @@ test-results/
 playwright-report/
 *.db
 *.db-*
+*.dump
+*.bak
+*.bundle
 *.log
 pytest-cache-files-*/
 *.tsbuildinfo

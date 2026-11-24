@@ -1,4 +1,4 @@
-"""Import-safe compatibility with the two original TP2 contract tests."""
+"""Import-safe validation of the legacy Spanish result schema."""
 
 from app.schemas.contracts import LegacyResult
 

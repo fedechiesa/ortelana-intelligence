@@ -173,5 +173,3 @@ def test_pagination_metrics_health_and_correlation(client):
     assert "execution_id=" not in metrics
     trace = str(uuid4())
     assert client.get("/salud", headers={"X-Correlation-ID": trace}).headers["X-Correlation-ID"] == trace
-
-

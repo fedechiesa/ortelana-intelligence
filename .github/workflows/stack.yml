@@ -15,6 +15,7 @@ jobs:
       - run: pip install uv==0.13.8
       - run: uv sync --project backend --frozen
       - run: docker compose up --build -d --wait --wait-timeout 180
+      - run: pwsh -NoProfile -File scripts/validate_initialization.ps1
       - run: uv run --project backend --frozen python scripts/validate_stack.py --restart-backend
       - run: uv run --project backend --frozen python scripts/validate_n8n.py
       - run: npm ci && npx playwright install --with-deps chromium && npm run test:e2e

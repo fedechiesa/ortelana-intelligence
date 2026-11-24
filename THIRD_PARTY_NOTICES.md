@@ -1,11 +1,17 @@
-# Attribution and material boundaries
+# Attribution, provenance and licensing status
 
-Ortelana is an academic textile case used in ORT's Artificial Intelligence and Data Science program. This portfolio is an independent continuation, not the original group submission and not an official ORT product.
+Ortelana is an academic textile case used in ORT's Artificial Intelligence and Data Science program. This repository is an independent personal continuation for portfolio review, not an official ORT product or the original group submission. The academic case and earlier exercises informed the business problem, report-format semantics and specialist/coordinator concepts. No exclusive authorship of that context is claimed.
 
-The provided TP2 scaffold, original contract tests and academic instructions originated with the teaching materials. A partially completed TP1 was found locally at the authorized `ORT/SDA/tpIntegrador` directory. Annual aggregation, product-master lookup, explicit report-format semantics, specialist/coordinator responsibilities and missing-data handling were adapted/refactored from that context. The incomplete TP1 graph was not represented as a recovered finished implementation. The new API, persistence model, checkpoint recovery, frontend, infrastructure, workflows, observability and expanded tests were constructed for this project.
+The API, persistence/integrity model, durable orchestration, frontend, infrastructure, integrations, observability and independently authored expanded tests were implemented for this continuation. Only independently generated `DEMO-*` products and synthetic measurements are distributed. The generator uses fixed formulas; it does not resample or perturb the original dataset.
 
-`backend/tests/test_contrato.py` preserves the two supplied contract assertions, with formatting only. No exclusive authorship of the original teaching/group contributions is claimed. No group members' personal names or contact details are included.
+## Excluded materials
 
-Original PDFs, ZIPs, rubrics and the original dataset remain outside Git. Their redistribution permission was not supplied. No license is assigned to those materials. The independent synthetic demo is generated from this project's own fixed formulas and `DEMO-*` names; it is not a modified or resampled historical dataset.
+Redistribution permission for original teaching documents, datasets and supplied contract tests has not been established. Original PDFs, ZIPs, rubrics, source extracts and historical CSV/catalog files are excluded. Copied teaching tests and internal documents containing original-data results were removed from the public history before publication. Independent synthetic tests cover the compatibility schema. No original dataset, group members' contact details or academic assignment submission is distributed.
 
-Dependencies retain their own licenses. n8n Community is source-available software under its own terms, not described here as having the same license as PostgreSQL or React. Review all dependency and source permissions before public distribution. A project-wide license is deliberately deferred until the rights review is complete.
+## Project license
+
+**No project-wide license is granted at this time.** Rights sufficient to apply MIT to every upstream academic contribution could not be confirmed. Public visibility is for portfolio inspection and does not establish permission to reuse or redistribute the entire project. There is deliberately no MIT `LICENSE` or license badge. Resolve ownership and permissions before adding a blanket license; this statement does not license excluded materials.
+
+## Dependencies
+
+Dependencies retain their respective licenses and notices. They are installed from upstream packages/images; their source is not vendored here. n8n Community is source-available under its own terms and must not be described as MIT-licensed. Grafana and other services retain their own distribution obligations. Inspect upstream notices and locks before redistributing a bundled product. Screenshots show running services and synthetic project data; no ownership of third-party product names or interfaces is claimed.
